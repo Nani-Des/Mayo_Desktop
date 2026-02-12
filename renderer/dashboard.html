@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mayo Dashboard</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+        padding: 0;
+      }
+
+      .dashboard-container {
+        max-width: 900px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      }
+
+      h1 {
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: #4CAF50;
+        color: white;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      #dataSharingSection {
+        margin-top: 20px;
+        display: none;
+        border-top: 1px solid #ddd;
+        padding-top: 20px;
+      }
+
+      .sharing-option {
+        margin: 10px 0;
+        padding: 12px;
+        border: 1px dashed #888;
+        border-radius: 8px;
+        background-color: #fafafa;
+      }
+
+      .device-list {
+        margin-top: 15px;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background-color: #fff;
+      }
+
+      .device-item {
+        padding: 10px 12px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .device-item:last-child {
+        border-bottom: none;
+      }
+
+      .device-name {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .device-address {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .device-connect-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .device-connect-btn:hover {
+        background-color: #1976D2;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+
+      .no-devices {
+        text-align: center;
+        padding: 20px;
+        color: #999;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="dashboard-container">
+      <h1>Welcome, <span id="userName">User</span></h1>
+
+      <button id="dataSharingBtn">Data Sharing</button>
+
+      <div id="dataSharingSection">
+        <div class="sharing-option">
+          <h3>Bluetooth Sharing</h3>
+          <p>Click to start Bluetooth transfer</p>
+          <button id="bluetoothBtn">Start Bluetooth</button>
+          <div id="bluetoothDeviceList" class="device-list" style="display: none;"></div>
+        </div>
+
+        <div class="sharing-option">
+          <h3>QR Code Sharing</h3>
+          <p>Click to generate QR code</p>
+          <button id="qrCodeBtn">Generate QR</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>

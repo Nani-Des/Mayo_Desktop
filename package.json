@@ -1,0 +1,22 @@
+{
+  "name": "mayo_desktop",
+  "version": "1.0.0",
+  "main": "main.js",
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.6.2",
+    "node-bluetooth": "^1.2.6",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "electron": "24.8.8"
+  }
+}
