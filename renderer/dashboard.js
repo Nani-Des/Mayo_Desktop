@@ -1,112 +1,246 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Existing Dashboard Elements
   const dataSharingBtn = document.getElementById("dataSharingBtn");
   const dataSharingSection = document.getElementById("dataSharingSection");
   const userNameSpan = document.getElementById("userName");
   const bluetoothBtn = document.getElementById("bluetoothBtn");
   const deviceListContainer = document.getElementById("bluetoothDeviceList");
 
-  // Pairing modal elements
-  const pairingModal = document.getElementById("pairingModal");
-  const pairingDeviceName = document.getElementById("pairingDeviceName");
-  const pairingCodeDisplay = document.getElementById("pairingCodeDisplay");
-  const pairingInstructions = document.getElementById("pairingInstructions");
-  const confirmPairingBtn = document.getElementById("confirmPairingBtn");
-  const cancelPairingBtn = document.getElementById("cancelPairingBtn");
-  const pairingError = document.getElementById("pairingError");
+  // QR Session modal elements
+  const qrSessionModal = document.getElementById("qrSessionModal");
+  const qrCodeImage = document.getElementById("qrCodeImage");
+  const qrCodeLoading = document.getElementById("qrCodeLoading");
+  const sessionStatus = document.getElementById("sessionStatus");
+  const patientDataSection = document.getElementById("patientDataSection");
+  const patientInfo = document.getElementById("patientInfo");
+  const patientRecords = document.getElementById("patientRecords");
+  const consultationForm = document.getElementById("consultationForm");
+  const closeQrBtn = document.getElementById("closeQrBtn");
+  const qrSessionError = document.getElementById("qrSessionError");
 
-  // Current pairing state
-  let currentPairingAddress = null;
-  let currentPairingDeviceName = null;
-  let pairingTimeout = null;
+  // Current state
+  let currentSessionToken = null;
+  let sessionPollInterval = null;
+  const SERVER_URL = "http://localhost:3000"; // Your Node.js Server
 
-  // TODO: get logged-in user from login page
-  // For now, placeholder name
   const loggedInUser = localStorage.getItem("loggedInUserName") || "Dr. User";
   userNameSpan.textContent = loggedInUser;
 
-  // Toggle data sharing section
-  dataSharingBtn.addEventListener("click", () => {
-    if (dataSharingSection.style.display === "none") {
-      dataSharingSection.style.display = "block";
-    } else {
-      dataSharingSection.style.display = "none";
-    }
+  // --- 1. QR Code Button Integration ---
+  document.getElementById("qrCodeBtn").addEventListener("click", () => {
+    // Instead of calling a mock API, we simply show the modal.
+    // The server.js '/' route already handles the QR generation.
+    // We will just point our iframe or image to the server's UI.
+    
+    showQRModal();
+    startSessionPolling();
   });
 
-  // Bluetooth scanning functionality
-  let isScanning = false;
-  
-  bluetoothBtn.addEventListener("click", async () => {
-    // Toggle device list visibility if already scanned
-    if (!isScanning && deviceListContainer.style.display === "block") {
-      deviceListContainer.style.display = "none";
-      return;
-    }
+  function showQRModal() {
+    // We point the image source to the root of your server which shows the QR
+    // Note: If you want just the QR image, it's better to use a library like 
+    // QRCode.js directly in this dashboard too.
+    qrCodeLoading.style.display = "none";
+    qrCodeImage.style.display = "none"; 
     
-    // Start scanning using paired Bluetooth devices
-    isScanning = true;
-    bluetoothBtn.textContent = "Scanning...";
-    bluetoothBtn.disabled = true;
-    deviceListContainer.style.display = "block";
-    deviceListContainer.innerHTML = '<div class="loading">Scanning for Bluetooth devices...</div>';
+    // UI Feedback
+    sessionStatus.innerHTML = `<span class="status-pending">Server active at ${SERVER_URL}. Waiting for scan...</span>`;
+    patientDataSection.style.display = "none";
+    qrSessionModal.classList.add("active");
+  }
+
+  // --- 2. Real-Time Polling Integration ---
+  function startSessionPolling() {
+    console.log("🔍 Polling Node.js server for patient data...");
+    
+    sessionPollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`${SERVER_URL}/getSessionInfo`);
+        const result = await response.json();
+        
+        if (result.success && result.session) {
+          currentSessionToken = result.session.token;
+          updateSessionUI(result.session);
+          // Optional: stopSessionPolling(); // Stop once data is found
+        }
+      } catch (error) {
+        console.error("Polling error: Ensure server.js is running.", error);
+      }
+    }, 3000);
+  }
+
+  function stopSessionPolling() {
+    if (sessionPollInterval) {
+      clearInterval(sessionPollInterval);
+      sessionPollInterval = null;
+    }
+  }
+
+  function updateSessionUI(session) {
+    if (session.status === 'data_shared') {
+      sessionStatus.innerHTML = '<span class="status-connected">✅ Patient Data Received!</span>';
+      patientDataSection.style.display = "block";
+      
+      patientInfo.innerHTML = `
+        <strong>Patient:</strong> ${escapeHtml(session.patientName)}<br>
+        <strong>ID:</strong> ${escapeHtml(session.patientId)}
+      `;
+      
+      // Display medical records from the server
+      if (session.medicalRecords) {
+        let recordsHtml = "";
+        for (const [key, value] of Object.entries(session.medicalRecords)) {
+          recordsHtml += `<strong>${escapeHtml(key)}:</strong> ${escapeHtml(String(value))}<br>`;
+        }
+        patientRecords.innerHTML = recordsHtml;
+      }
+    }
+  }
+
+  // --- 3. Complete Session (Wipe Data) ---
+  consultationForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const submitBtn = consultationForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving & Wiping...";
 
     try {
-      const result = await window.api.scanBluetooth();
-      console.log("Bluetooth scan result:", result);
+      // Tell the server to wipe the memory
+      const response = await fetch(`${SERVER_URL}/completeSession`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const result = await response.json();
       
       if (result.success) {
-        if (result.devices && result.devices.length > 0) {
-          // Display discovered devices
-          deviceListContainer.innerHTML = result.devices
-            .map(
-              (device) => `
-              <div class="device-item">
-                <div>
-                  <div class="device-name">${escapeHtml(device.name)}</div>
-                  <div class="device-address">${escapeHtml(device.address)}</div>
-                  <div class="device-class">${escapeHtml(device.deviceClass || 'Bluetooth Device')}</div>
-                </div>
-                <button class="device-connect-btn" data-address="${escapeHtml(device.address)}">Connect</button>
-              </div>
-            `
-            )
-            .join("");
-
-          // Add click handlers for connect buttons
-          document.querySelectorAll(".device-connect-btn").forEach((btn) => {
-            btn.addEventListener("click", async (e) => {
-              const address = e.target.getAttribute("data-address");
-              const deviceName = e.target.closest(".device-item").querySelector(".device-name").textContent;
-              
-              // Show connecting state
-              const originalText = e.target.textContent;
-              e.target.textContent = "Connecting...";
-              e.target.disabled = true;
-
-              // Use two-step pairing process
-              await initiatePairing(e.target, address, deviceName, originalText);
-            });
-          });
-        } else {
-          deviceListContainer.innerHTML = '<div class="no-devices">No paired Bluetooth devices found.<br><br>To pair a new device:<br>1. Open System Settings → Bluetooth<br>2. Put your device in pairing mode<br>3. Select the device to pair</div>';
-        }
-      } else {
-        deviceListContainer.innerHTML = `<div class="no-devices">Error: ${escapeHtml(result.message)}</div>`;
+        alert("Consultation Saved. Patient data has been wiped from server memory.");
+        hideQRModal();
       }
     } catch (error) {
-      console.error("Bluetooth scan error:", error);
-      deviceListContainer.innerHTML = `<div class="no-devices">Error: ${escapeHtml(error.message)}</div>`;
+      console.error("Error completing session:", error);
+      qrSessionError.textContent = "Failed to finalize session on server.";
     } finally {
-      isScanning = false;
-      bluetoothBtn.textContent = "Start Bluetooth";
-      bluetoothBtn.disabled = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Save Consultation";
     }
   });
 
-  // Placeholder buttons for QR code
-  document.getElementById("qrCodeBtn").addEventListener("click", () => {
-    alert("QR code sharing clicked! (placeholder)");
-  });
+  function hideQRModal() {
+    qrSessionModal.classList.remove("active");
+    stopSessionPolling();
+    patientDataSection.style.display = "none";
+    consultationForm.reset();
+  }
+
+  closeQrBtn.addEventListener("click", hideQRModal);
+
+  // Helper for XSS protection
+  function escapeHtml(text) {
+    if (!text) return "";
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // (Keep your existing Bluetooth and History functions below this)
+});
+  // History button
+  const historyBtn = document.getElementById("historyBtn");
+  if (historyBtn) {
+    historyBtn.addEventListener("click", async () => {
+      try {
+        const result = await window.api.getConsultationHistory("doctor_" + Date.now());
+        
+        if (result.success && result.consultations) {
+          if (result.consultations.length === 0) {
+            consultationHistory.innerHTML = "<p>No consultations yet.</p>";
+          } else {
+            consultationHistory.innerHTML = result.consultations.map(c => `
+              <div class="consultation-item">
+                <h4>${escapeHtml(c.patientName || "Unknown Patient")}</h4>
+                <div class="meta">
+                  Date: ${new Date(c.createdAt).toLocaleString()}<br>
+                  Doctor: ${escapeHtml(c.doctorName)}
+                </div>
+                <div class="content">
+                  <strong>Diagnosis:</strong> ${escapeHtml(c.diagnosis || "N/A")}<br>
+                  <strong>Treatment:</strong> ${escapeHtml(c.treatment || "N/A")}<br>
+                  <strong>Notes:</strong> ${escapeHtml(c.notes || "N/A")}<br>
+                  <strong>Prescriptions:</strong> ${escapeHtml(c.prescriptions || "N/A")}
+                </div>
+              </div>
+            `).join("");
+          }
+        } else {
+          consultationHistory.innerHTML = "<p>No consultations found.</p>";
+        }
+      } catch (error) {
+        console.error("Error loading history:", error);
+        consultationHistory.innerHTML = "<p>Error loading consultation history.</p>";
+      }
+      
+      historyModal.classList.add("active");
+    });
+  }
+
+  // Close history modal
+  if (closeHistoryBtn) {
+    closeHistoryBtn.addEventListener("click", () => {
+      historyModal.classList.remove("active");
+    });
+  }
+
+  // Patient simulation - simulates what happens when patient scans QR code
+  const simulateScanBtn = document.getElementById("simulateScanBtn");
+  const simulationStatus = document.getElementById("simulationStatus");
+  
+  if (simulateScanBtn) {
+    simulateScanBtn.addEventListener("click", async () => {
+      console.log("[SIM] Button clicked, currentSessionToken:", currentSessionToken);
+      
+      if (!currentSessionToken) {
+        simulationStatus.innerHTML = "<span style='color: red;'>No active QR session. Generate a QR code first.</span>";
+        return;
+      }
+
+      simulationStatus.innerHTML = "<span style='color: blue;'>Simulating patient scan...</span>";
+      console.log("[SIM] Using session token:", currentSessionToken);
+      
+      // Simulate patient data that would be sent from patient's phone
+      const patientData = {
+        patientId: "PAT-" + Math.floor(Math.random() * 10000),
+        patientName: "John Doe",
+        medicalRecords: {
+          "Blood Type": "O+",
+          "Allergies": "Penicillin",
+          "Conditions": "Hypertension",
+          "Medications": "Lisinopril 10mg",
+          "Last Visit": "2024-01-15",
+          "Notes": "Regular checkup - blood pressure controlled"
+        }
+      };
+
+      try {
+        const result = await window.api.patientSendData(
+          currentSessionToken,
+          patientData.patientId,
+          patientData.patientName,
+          patientData.medicalRecords
+        );
+        
+        if (result.success) {
+          simulationStatus.innerHTML = "<span style='color: green;'>Patient data sent successfully! Doctor can now view the data.</span>";
+        } else {
+          simulationStatus.innerHTML = `<span style='color: red;'>Error: ${result.message}</span>`;
+        }
+      } catch (error) {
+        console.error("Simulation error:", error);
+        simulationStatus.innerHTML = "<span style='color: red;'>Error sending patient data</span>";
+      }
+    });
+  }
 
   // ===== Bluetooth Pairing Modal Functions =====
   
@@ -330,4 +464,4 @@ document.addEventListener("DOMContentLoaded", () => {
     div.textContent = text;
     return div.innerHTML;
   }
-});
+

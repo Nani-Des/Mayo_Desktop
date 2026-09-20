@@ -13,7 +13,11 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.6.2",
-    "sqlite3": "^5.1.7"
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.2",

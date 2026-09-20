@@ -6,12 +6,15 @@ app.commandLine.appendSwitch("enable-web-bluetooth");
 
 const path = require("path");
 const { exec } = require("child_process");
+const https = require("https");
+const http = require("http");
 
 let db, bcrypt;
 
 // Load optional dependencies that may have native bindings
 try {
   db = require("./db");
+  console.log("[MODULE] db loaded successfully:", typeof db);
 } catch (e) {
   console.warn("Warning: db module failed to load:", e.message);
   db = null;
@@ -19,6 +22,7 @@ try {
 
 try {
   bcrypt = require("bcrypt");
+  console.log("[MODULE] bcrypt loaded successfully:", typeof bcrypt);
 } catch (e) {
   console.warn("Warning: bcrypt module failed to load:", e.message);
   bcrypt = null;
@@ -345,13 +349,188 @@ ipcMain.handle("bluetooth-status", async (_, { address }) => {
   });
 });
 
-ipcMain.handle("login", async (_, { id_card, password }) => {
-  return new Promise((resolve) => {
-    if (!db || !bcrypt) {
-      resolve({ success: false, message: "Server modules not loaded" });
-      return;
-    }
+// ===== QR Code / Hospital Data Transfer IPC Handlers =====
+
+// Helper function to make HTTP requests
+function makeRequest(method, path, body = null) {
+  return new Promise((resolve, reject) => {
+    const serverUrl = "http://localhost:3000";
+    const url = new URL(path, serverUrl);
     
+    const options = {
+      hostname: url.hostname,
+      port: url.port,
+      path: url.pathname,
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    const req = http.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch (e) {
+          resolve({ raw: data });
+        }
+      });
+    });
+
+    req.on("error", (error) => {
+      console.error("HTTP request error:", error);
+      reject(error);
+    });
+
+    if (body) {
+      req.write(JSON.stringify(body));
+    }
+    req.end();
+  });
+}
+
+// Generate QR code for patient scanning
+ipcMain.handle("generate-qr-code", async (_, { doctorId, doctorName, patientName }) => {
+  try {
+    console.log("[MAIN] Generating QR code for doctor:", doctorName);
+    const result = await makeRequest("POST", "/api/session/generate", {
+      doctorId,
+      doctorName,
+      patientName: patientName || null,
+    });
+    
+    console.log("[MAIN] Server response:", result);
+    
+    if (result.success) {
+      return {
+        success: true,
+        qrCode: result.qrCode,
+        sessionToken: result.sessionToken,
+        message: result.message,
+      };
+    } else {
+      return { success: false, message: result.message };
+    }
+  } catch (error) {
+    console.error("[MAIN] Error generating QR code:", error);
+    return { success: false, message: "Failed to connect to server. Make sure mock server is running." };
+  }
+});
+
+// Get session info and patient data
+ipcMain.handle("get-session-info", async (_, { sessionToken }) => {
+  try {
+    const result = await makeRequest("GET", `/api/session/${sessionToken}`);
+    return result;
+  } catch (error) {
+    console.error("Error getting session info:", error);
+    return { success: false, message: "Failed to get session info" };
+  }
+});
+
+// Add consultation notes
+ipcMain.handle("add-consultation", async (_, { sessionToken, diagnosis, treatment, notes, prescriptions, doctorId, doctorName }) => {
+  try {
+    const result = await makeRequest("POST", `/api/session/${sessionToken}/consultation`, {
+      diagnosis,
+      treatment,
+      notes,
+      prescriptions,
+      doctorId,
+      doctorName,
+    });
+    return result;
+  } catch (error) {
+    console.error("Error adding consultation:", error);
+    return { success: false, message: "Failed to add consultation" };
+  }
+});
+
+// Complete session and wipe patient data
+ipcMain.handle("complete-session", async (_, { sessionToken }) => {
+  try {
+    const result = await makeRequest("POST", `/api/session/${sessionToken}/complete`);
+    return result;
+  } catch (error) {
+    console.error("Error completing session:", error);
+    return { success: false, message: "Failed to complete session" };
+  }
+});
+
+// Get doctor's consultation history
+ipcMain.handle("get-consultation-history", async (_, { doctorId }) => {
+  try {
+    const result = await makeRequest("GET", `/api/consultations/${doctorId}`);
+    return result;
+  } catch (error) {
+    console.error("Error getting consultation history:", error);
+    return { success: false, message: "Failed to get consultation history" };
+  }
+});
+
+// Patient sends medical data (simulated)
+ipcMain.handle("patient-send-data", async (_, { sessionToken, patientId, patientName, medicalRecords }) => {
+  try {
+    const result = await makeRequest("POST", `/api/session/${sessionToken}/patient-data`, {
+      patientId,
+      patientName,
+      medicalRecords,
+    });
+    return result;
+  } catch (error) {
+    console.error("Error sending patient data:", error);
+    return { success: false, message: "Failed to send patient data" };
+  }
+});
+
+// Patient gets updated data after consultation
+ipcMain.handle("patient-get-data", async (_, { sessionToken }) => {
+  try {
+    const result = await makeRequest("GET", `/api/session/${sessionToken}/patient-data`);
+    return result;
+  } catch (error) {
+    console.error("Error getting patient data:", error);
+    return { success: false, message: "Failed to get patient data" };
+  }
+});
+
+ipcMain.handle("login", async (_, { id_card, password }) => {
+  // DIAGNOSTIC: Log module states
+  console.log("[LOGIN] db =", db, "bcrypt =", bcrypt);
+  console.log("[LOGIN] !db =", !db, "!bcrypt =", !bcrypt);
+  console.log("[LOGIN] Entering test mode:", !db || !bcrypt);
+  
+  // For testing without database, allow these test credentials
+  const testUsers = {
+    "D21035633": { name: "Dr. Nana Kweku", role: "doctor", password: "doctor123" },
+    "N5678": { name: "Nurse Kofi Owusu", role: "nurse", password: "nurse123" }
+  };
+  
+  console.log("[LOGIN] Looking up id_card:", id_card);
+  console.log("[LOGIN] testUsers[id_card]:", testUsers[id_card]);
+  console.log("[LOGIN] password match:", testUsers[id_card] ? testUsers[id_card].password === password : 'N/A');
+  
+  // Check if we have database available
+  if (!db || !bcrypt) {
+    // Use test mode without database
+    if (testUsers[id_card] && testUsers[id_card].password === password) {
+      return {
+        success: true,
+        user: {
+          id: 1,
+          name: testUsers[id_card].name,
+          role: testUsers[id_card].role
+        }
+      };
+    }
+    return { success: false, message: "Invalid credentials" };
+  }
+  
+  // Original database login
+  return new Promise((resolve) => {
     db.get(
       "SELECT * FROM users WHERE id_card = ?",
       [id_card],
