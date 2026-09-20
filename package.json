@@ -4,7 +4,7 @@
   "main": "main.js",
   "packageManager": "pnpm@10.29.3",
   "scripts": {
-    "start": "electron ."
+    "start": "unset ELECTRON_RUN_AS_NODE && electron ."
   },
   "keywords": [],
   "author": "",
@@ -13,10 +13,14 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.6.2",
-    "node-bluetooth": "^1.2.6",
-    "sqlite3": "^5.1.7"
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
     "electron": "24.8.8"
   }
 }

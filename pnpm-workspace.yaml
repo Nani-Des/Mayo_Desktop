@@ -1,5 +1,0 @@
-onlyBuiltDependencies:
-  - bcrypt
-  - better-sqlite3
-  - electron
-  - sqlite3

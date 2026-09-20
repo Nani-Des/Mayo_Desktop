@@ -101,6 +101,18 @@
         background-color: #1976D2;
       }
 
+      .secondary-btn {
+        background-color: #9e9e9e;
+        color: white;
+        padding: 8px 16px;
+        font-size: 14px;
+        margin-left: 10px;
+      }
+
+      .secondary-btn:hover {
+        background-color: #757575;
+      }
+
       .loading {
         text-align: center;
         padding: 20px;
@@ -111,6 +123,228 @@
         text-align: center;
         padding: 20px;
         color: #999;
+      }
+
+      /* Pairing Confirmation Modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 450px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-content h2 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      .pairing-code {
+        font-size: 36px;
+        font-weight: bold;
+        color: #2196F3;
+        letter-spacing: 4px;
+        margin: 20px 0;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 8px;
+      }
+
+      .modal-instructions {
+        color: #666;
+        margin-bottom: 25px;
+        line-height: 1.5;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      .modal-btn {
+        padding: 12px 30px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .modal-btn-confirm {
+        background-color: #4CAF50;
+        color: white;
+      }
+
+      .modal-btn-confirm:hover {
+        background-color: #45a049;
+      }
+
+      .modal-btn-confirm:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .modal-btn-cancel {
+        background-color: #f44336;
+        color: white;
+      }
+
+      .modal-btn-cancel:hover {
+        background-color: #d32f2f;
+      }
+
+      .modal-error {
+        color: #f44336;
+        margin-top: 15px;
+        font-size: 14px;
+      }
+
+      .device-class {
+        font-size: 11px;
+        color: #888;
+      }
+
+      /* QR Code Modal Styles */
+      .qr-modal {
+        max-width: 550px;
+      }
+
+      .qr-code-container {
+        margin: 20px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .qr-code-container img {
+        max-width: 250px;
+        height: auto;
+      }
+
+      #qrCodeLoading {
+        color: #666;
+        padding: 40px;
+      }
+
+      .session-status {
+        margin: 15px 0;
+        padding: 10px;
+        border-radius: 6px;
+        text-align: center;
+      }
+
+      .status-pending {
+        color: #ff9800;
+        font-weight: 500;
+      }
+
+      .status-connected {
+        color: #4CAF50;
+        font-weight: 500;
+      }
+
+      .patient-data-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+      }
+
+      .patient-info {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+      }
+
+      .patient-records {
+        background: #f9f9f9;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        max-height: 150px;
+        overflow-y: auto;
+        font-size: 14px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+        text-align: left;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .form-group textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        resize: vertical;
+      }
+
+      .modal-btn-secondary {
+        background-color: #2196F3;
+        color: white;
+      }
+
+      .modal-btn-secondary:hover {
+        background-color: #1976D2;
+      }
+
+      /* History Modal */
+      .history-modal {
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .consultation-item {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        text-align: left;
+      }
+
+      .consultation-item h4 {
+        margin: 0 0 10px 0;
+        color: #333;
+      }
+
+      .consultation-item .meta {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 10px;
+      }
+
+      .consultation-item .content {
+        font-size: 14px;
       }
     </style>
   </head>
@@ -131,8 +365,97 @@
 
         <div class="sharing-option">
           <h3>QR Code Sharing</h3>
-          <p>Click to generate QR code</p>
+          <p>Click to generate QR code for patient to scan</p>
           <button id="qrCodeBtn">Generate QR</button>
+          <button id="historyBtn" class="secondary-btn">View History</button>
+          
+          <!-- Patient Simulation (for testing) -->
+          <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc;">
+            <h4>Patient Simulation (Testing)</h4>
+            <p style="font-size: 12px; color: #666;">Simulate what happens when patient scans QR code</p>
+            <button id="simulateScanBtn" class="secondary-btn">Simulate Patient Scan</button>
+            <div id="simulationStatus" style="margin-top: 10px; font-size: 12px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pairing Confirmation Modal -->
+    <div id="pairingModal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Bluetooth Pairing</h2>
+        <p id="pairingDeviceName" class="modal-instructions"></p>
+        <div id="pairingCodeDisplay" class="pairing-code"></div>
+        <p id="pairingInstructions" class="modal-instructions">
+          Please check your iPhone and confirm the pairing code matches, then tap "Pair" on your device.
+        </p>
+        <div class="modal-buttons">
+          <button id="confirmPairingBtn" class="modal-btn modal-btn-confirm">
+            Yes, I've Confirmed
+          </button>
+          <button id="cancelPairingBtn" class="modal-btn modal-btn-cancel">
+            Cancel
+          </button>
+        </div>
+        <div id="pairingError" class="modal-error"></div>
+      </div>
+    </div>
+
+    <!-- QR Code Session Modal -->
+    <div id="qrSessionModal" class="modal-overlay">
+      <div class="modal-content qr-modal">
+        <h2>QR Code for Patient</h2>
+        <p class="modal-instructions">
+          Let the patient scan this QR code to share their medical records with you.
+        </p>
+        <div id="qrCodeDisplay" class="qr-code-container">
+          <img id="qrCodeImage" src="" alt="QR Code" style="display: none;" />
+          <div id="qrCodeLoading">Generating QR Code...</div>
+        </div>
+        <div id="sessionStatus" class="session-status">
+          <span class="status-pending">Waiting for patient to scan...</span>
+        </div>
+        <div id="patientDataSection" class="patient-data-section" style="display: none;">
+          <h3>Patient Data Received</h3>
+          <div id="patientInfo" class="patient-info"></div>
+          <div id="patientRecords" class="patient-records"></div>
+          
+          <h3>Add Consultation Notes</h3>
+          <form id="consultationForm">
+            <div class="form-group">
+              <label for="diagnosis">Diagnosis:</label>
+              <textarea id="diagnosis" name="diagnosis" rows="2" placeholder="Enter diagnosis..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="treatment">Treatment:</label>
+              <textarea id="treatment" name="treatment" rows="2" placeholder="Enter treatment..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="notes">Notes:</label>
+              <textarea id="notes" name="notes" rows="3" placeholder="Additional notes..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="prescriptions">Prescriptions:</label>
+              <textarea id="prescriptions" name="prescriptions" rows="2" placeholder="Enter prescriptions..."></textarea>
+            </div>
+            <button type="submit" class="modal-btn modal-btn-confirm">Save & Send to Patient</button>
+          </form>
+        </div>
+        <div class="modal-buttons">
+          <button id="refreshQrBtn" class="modal-btn modal-btn-secondary">Refresh QR Code</button>
+          <button id="closeQrBtn" class="modal-btn modal-btn-cancel">Close Session</button>
+        </div>
+        <div id="qrSessionError" class="modal-error"></div>
+      </div>
+    </div>
+
+    <!-- Consultation History Modal -->
+    <div id="historyModal" class="modal-overlay">
+      <div class="modal-content history-modal">
+        <h2>Consultation History</h2>
+        <div id="consultationHistory" class="consultation-history"></div>
+        <div class="modal-buttons">
+          <button id="closeHistoryBtn" class="modal-btn modal-btn-cancel">Close</button>
         </div>
       </div>
     </div>
